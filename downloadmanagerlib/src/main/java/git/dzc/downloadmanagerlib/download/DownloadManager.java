@@ -1,6 +1,7 @@
 package git.dzc.downloadmanagerlib.download;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.squareup.okhttp.OkHttpClient;
 
@@ -18,6 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Created by dzc on 15/11/21.
  */
 public class DownloadManager {
+    private static final String TAG = "DownloadManager";
     private Context context;
     private static DownloadManager downloadManager;
     private static DownloadDao downloadDao;
@@ -25,6 +27,7 @@ public class DownloadManager {
     private ExecutorService executorService;
     private Map<String,Future> futureMap;
     private OkHttpClient client;
+    private Map<String,DownloadTask> currentTaskList = new HashMap<>();
     public void init(){
         executorService = Executors.newFixedThreadPool(mPoolSize);
         futureMap = new HashMap<>();
@@ -51,6 +54,11 @@ public class DownloadManager {
     }
 
     public void addDownloadTask(DownloadTask task,DownloadTaskListener listenr){
+        if(null!=currentTaskList.get(task.getId())&&task.getDownloadStatus()!=DownloadStatus.DOWNLOAD_STATUS_INIT){
+            Log.d(TAG,"task already exist");
+            return ;
+        }
+        currentTaskList.put(task.getId(), task);
         task.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_PREPARE);
         task.setDownloadDao(downloadDao);
         task.setHttpClient(client);

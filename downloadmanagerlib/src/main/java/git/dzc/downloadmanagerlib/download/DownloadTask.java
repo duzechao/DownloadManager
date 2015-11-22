@@ -23,6 +23,7 @@ import java.util.List;
 public class DownloadTask implements Runnable {
     private DownloadDBEntity dbEntity;
     private DownloadDao downloadDao;
+    private DownloadManager downloadManager;
     private OkHttpClient client;
 
 
@@ -49,7 +50,7 @@ public class DownloadTask implements Runnable {
 
     @Override
     public void run() {
-        downloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING;
+        downloadStatus = DownloadStatus.DOWNLOAD_STATUS_PREPARE;
         onPrepare();
         InputStream inputStream = null;
         BufferedInputStream bis = null;
@@ -59,28 +60,30 @@ public class DownloadTask implements Runnable {
             if(file.length()< completedSize){
                 completedSize = 0;
             }
+            downloadStatus = DownloadStatus.DOWNLOAD_STATUS_START;
+            onStart();
             Request request = new Request.Builder()
                     .url(url)
                     .header("RANGE", "bytes=" + completedSize + "-")//设置http断点RANGE值
                     .build();
             Response response = client.newCall(request).execute();
-            onStart();
             ResponseBody responseBody = response.body();
             if(responseBody!=null){
+                downloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING;
                 toolSize = responseBody.contentLength();
                 inputStream = responseBody.byteStream();
                 bis = new BufferedInputStream(inputStream);
                 byte[] buffer = new byte[2 * 1024];
-                int lenght = 0;
+                int length = 0;
                 int buffOffset = 0;
                 if(dbEntity==null){
                     dbEntity = new DownloadDBEntity(id,toolSize,0L,url, saveDirPath,fileName,downloadStatus);
                     downloadDao.insertOrReplace(dbEntity);
                 }
-                while ((lenght = bis.read(buffer)) > 0 && downloadStatus!=DownloadStatus.DOWNLOAD_STATUS_CANCEL) {
-                    file.write(buffer, 0, lenght);
-                    completedSize += lenght;
-                    buffOffset += lenght;
+                while ((length = bis.read(buffer)) > 0 && downloadStatus!=DownloadStatus.DOWNLOAD_STATUS_CANCEL) {
+                    file.write(buffer, 0, length);
+                    completedSize += length;
+                    buffOffset += length;
                     if (buffOffset >= UPDATE_SIZE) {
                         // 更新数据库中的下载信息
                         buffOffset = 0;
@@ -234,7 +237,9 @@ public class DownloadTask implements Runnable {
     public void removeDownloadListener(DownloadTaskListener listener){
         listeners.remove(listener);
     }
-
+    public void setDownloadManager(DownloadManager downloadManager) {
+        this.downloadManager = downloadManager;
+    }
 
 
     @Override
