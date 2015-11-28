@@ -87,10 +87,10 @@ public class DownloadTask implements Runnable {
                     if (buffOffset >= UPDATE_SIZE) {
                         // 更新数据库中的下载信息
                         buffOffset = 0;
+                        dbEntity.setCompletedSize(completedSize);
+                        downloadDao.update(dbEntity);
+                        onDownloading();
                     }
-                    dbEntity.setCompletedSize(completedSize);
-                    downloadDao.update(dbEntity);
-                    onDownloading();
                 }
             }
         } catch (FileNotFoundException e) {
