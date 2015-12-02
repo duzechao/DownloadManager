@@ -92,15 +92,20 @@ public class DownloadTask implements Runnable {
                         onDownloading();
                     }
                 }
+                dbEntity.setCompletedSize(completedSize);
+                downloadDao.update(dbEntity);
+                onDownloading();
             }
         } catch (FileNotFoundException e) {
             downloadStatus = DownloadStatus.DOWNLOAD_STATUS_ERROR;
             onError(DownloadTaskListener.DOWNLOAD_ERROR_FILE_NOT_FOUND);
-            e.printStackTrace();
+            return;
+//            e.printStackTrace();
         } catch (IOException e) {
             downloadStatus = DownloadStatus.DOWNLOAD_STATUS_ERROR;
             onError(DownloadTaskListener.DOWNLOAD_ERROR_IO_ERROR);
-            e.printStackTrace();
+            return;
+//            e.printStackTrace();
         }finally {
             if(bis!=null) try {
                 bis.close();

@@ -27,6 +27,11 @@ public class DownloadManager {
     private ExecutorService executorService;
     private Map<String,Future> futureMap;
     private OkHttpClient client;
+
+    public Map<String, DownloadTask> getCurrentTaskList() {
+        return currentTaskList;
+    }
+
     private Map<String,DownloadTask> currentTaskList = new HashMap<>();
     public void init(){
         executorService = Executors.newFixedThreadPool(mPoolSize);
@@ -97,6 +102,10 @@ public class DownloadManager {
             }
         }
         return downloadTaskList;
+    }
+
+    public DownloadTask getTaskById(String taskId){
+        return currentTaskList.get(taskId);
     }
 
 }

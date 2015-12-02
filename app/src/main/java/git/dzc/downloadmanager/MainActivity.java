@@ -1,12 +1,17 @@
 package git.dzc.downloadmanager;
 
+import android.content.Intent;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
+
+import java.util.ArrayList;
+import java.util.List;
 
 import git.dzc.downloadmanagerlib.download.DownloadManager;
 import git.dzc.downloadmanagerlib.download.DownloadTask;
@@ -17,16 +22,18 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv1;
     private TextView tv2;
     private TextView tv3;
+    private TextView tv4;
     private DownloadManager downloadManager;
     private Handler handler;
 
+    private List<String> taskIds = new ArrayList<>();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         handler = new Handler();
-        downloadManager = DownloadManager.getInstance(this);
+        downloadManager = DownloadManager.getInstance(getApplicationContext());
         initView();
 
     }
@@ -40,6 +47,20 @@ public class MainActivity extends AppCompatActivity {
         tv1.setOnClickListener(listener);
         tv2.setOnClickListener(listener);
         tv3.setOnClickListener(listener);
+
+        tv4 = (TextView) findViewById(R.id.tv4);
+        tv4.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!taskIds.isEmpty()){
+                    Intent intent = new Intent(MainActivity.this,Main2Activity.class);
+                    intent.putExtra("taskId",taskIds.get(0));
+                    startActivity(intent);
+                }else{
+                    Toast.makeText(MainActivity.this,"请先开始一个下载",Toast.LENGTH_LONG).show();
+                }
+            }
+        });
 
     }
     private String getUrl(View v){
@@ -68,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
         tv.setClickable(false);
         DownloadTask task = new DownloadTask();
         String id = MD5.MD5(url);
+        taskIds.add(id);
         task.setId(id);
         task.setSaveDirPath(getExternalCacheDir().getPath() + "/");
         task.setFileName(id+".jpg");
