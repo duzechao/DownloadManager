@@ -1,4 +1,5 @@
 # DownloadManager
+#如果需要使用网络请求及上传文件 请看[OKHttpUtils](https://github.com/duzechao/OKHttpUtils)
 一个下载Android框架，网络连接用了okhttp，数据库方面用GreenDao，<br/>
 性能相对用原生的有所提升且支持数据库的一对一、一对多等多表关联，<br/>支持断点下载、加载下载的任务并可给同一个任务设置多个监听，<br/>
 省去只能设置一个监听要添加一个广播来解决多个页面同时监听同一个下载线程的烦恼，<br/>
