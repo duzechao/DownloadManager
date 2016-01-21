@@ -3,8 +3,12 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/DownloadManager.iml" filepath="$PROJECT_DIR$/DownloadManager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/DownloadManager.iml" filepath="$PROJECT_DIR$/DownloadManager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/downloadmanagerlib/downloadmanagerlib.iml" filepath="$PROJECT_DIR$/downloadmanagerlib/downloadmanagerlib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/downloadmanagerlib/downloadmanagerlib.iml" filepath="$PROJECT_DIR$/downloadmanagerlib/downloadmanagerlib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/greendaogen/greendaogen.iml" filepath="$PROJECT_DIR$/greendaogen/greendaogen.iml" />
       <module fileurl="file://$PROJECT_DIR$/greendaogen/greendaogen.iml" filepath="$PROJECT_DIR$/greendaogen/greendaogen.iml" />
     </modules>
   </component>
