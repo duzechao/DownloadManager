@@ -35,4 +35,4 @@ downloadManager.loadAllDownloadTaskFromDB();
 
 Adding a notification for each task in the task bar <br>
  
-![df](device-2016-02-08-230744.png)
+![df](art/device-2016-02-08-230744.png)
