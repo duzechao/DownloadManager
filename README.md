@@ -8,7 +8,8 @@ With the basic functions, temporarily can not think of what you need to add func
 dzc_ze@foxmail.com needs please send me by mail <br/>
 
 
-How to use：<br/>
+##How to use：<br/>
+
 ```
 downloadManager = DownloadManager.getInstance(this);
 DownloadTask task = new DownloadTask();
