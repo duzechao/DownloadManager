@@ -19,12 +19,14 @@ task.setSaveDirPath(getExternalCacheDir().getPath() + "/");
 task.setFileName(id+".jpg");
 task.setUrl(url);
 downloadManager.addDownloadTask(task);
-```
 
 
-Add a listener<br/>
+
+//  Add a listener
 downloadManager.addDownloadListener(task,listener);
 
 
-加载数据库存在的下载任务<br/>
+//  Loads the prevoiusly set tasks from the database
 downloadManager.loadAllDownloadTaskFromDB();
+
+```
