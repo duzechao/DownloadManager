@@ -30,3 +30,9 @@ downloadManager.addDownloadListener(task,listener);
 downloadManager.loadAllDownloadTaskFromDB();
 
 ```
+
+## Demo app:
+
+Adding a notification for each task in the task bar <br>
+ 
+![df](device-2016-02-08-230744.png)
