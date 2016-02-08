@@ -9,14 +9,16 @@ dzc_ze@foxmail.com needs please send me by mail <br/>
 
 
 How to use：<br/>
-downloadManager = DownloadManager.getInstance(this);<br/>
-DownloadTask task = new DownloadTask();<br/>
-String id = MD5.MD5(url);<br/>
-task.setId(id);<br/>
-task.setSaveDirPath(getExternalCacheDir().getPath() + "/");<br/>
-task.setFileName(id+".jpg");<br/>
-task.setUrl(url);<br/>
-downloadManager.addDownloadTask(task);<br/>
+```
+downloadManager = DownloadManager.getInstance(this);
+DownloadTask task = new DownloadTask();
+String id = MD5.MD5(url);
+task.setId(id);
+task.setSaveDirPath(getExternalCacheDir().getPath() + "/");
+task.setFileName(id+".jpg");
+task.setUrl(url);
+downloadManager.addDownloadTask(task);
+```
 
 
 Add a listener<br/>
