@@ -25,19 +25,17 @@ public class DownloadTask implements Runnable {
     private OkHttpClient client;
 
 
-
     private String id;
     private long toolSize;
-    private long completedSize;//已经下载完的部分
-//    private float percent;//完成百分比
+    private long completedSize;         //  Download section has been completed
+    //    private float percent;        //  Percent Complete
     private String url;
     private String saveDirPath;
     private RandomAccessFile file;
-    private int UPDATE_SIZE = 40 * 1024;//每40k更新一次数据库
+    private int UPDATE_SIZE = 40 * 1024;    //  The database is updated once every 40k
     private int downloadStatus = DownloadStatus.DOWNLOAD_STATUS_INIT;
 
-    private String fileName;// 保存时的文件名
-
+    private String fileName;    // File name when saving
 
 
     private List<DownloadTaskListener> listeners;
@@ -54,19 +52,19 @@ public class DownloadTask implements Runnable {
         BufferedInputStream bis = null;
         try {
             dbEntity = downloadDao.load(id);
-            file = new RandomAccessFile(saveDirPath +fileName,"rwd");
-            if(file.length()< completedSize){
+            file = new RandomAccessFile(saveDirPath + fileName, "rwd");
+            if (file.length() < completedSize) {
                 completedSize = 0;
             }
             downloadStatus = DownloadStatus.DOWNLOAD_STATUS_START;
             onStart();
             Request request = new Request.Builder()
                     .url(url)
-                    .header("RANGE", "bytes=" + completedSize + "-")//设置http断点RANGE值
+                    .header("RANGE", "bytes=" + completedSize + "-")    //  Http value set breakpoints RANGE
                     .build();
             Response response = client.newCall(request).execute();
             ResponseBody responseBody = response.body();
-            if(responseBody!=null){
+            if (responseBody != null) {
                 downloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING;
                 toolSize = responseBody.contentLength();
                 inputStream = responseBody.byteStream();
@@ -74,16 +72,16 @@ public class DownloadTask implements Runnable {
                 byte[] buffer = new byte[2 * 1024];
                 int length = 0;
                 int buffOffset = 0;
-                if(dbEntity==null){
-                    dbEntity = new DownloadDBEntity(id,toolSize,0L,url, saveDirPath,fileName,downloadStatus);
+                if (dbEntity == null) {
+                    dbEntity = new DownloadDBEntity(id, toolSize, 0L, url, saveDirPath, fileName, downloadStatus);
                     downloadDao.insertOrReplace(dbEntity);
                 }
-                while ((length = bis.read(buffer)) > 0 && downloadStatus!=DownloadStatus.DOWNLOAD_STATUS_CANCEL) {
+                while ((length = bis.read(buffer)) > 0 && downloadStatus != DownloadStatus.DOWNLOAD_STATUS_CANCEL) {
                     file.write(buffer, 0, length);
                     completedSize += length;
                     buffOffset += length;
                     if (buffOffset >= UPDATE_SIZE) {
-                        // 更新数据库中的下载信息
+                        // Update download information database
                         buffOffset = 0;
                         dbEntity.setCompletedSize(completedSize);
                         downloadDao.update(dbEntity);
@@ -104,18 +102,18 @@ public class DownloadTask implements Runnable {
             onError(DownloadTaskListener.DOWNLOAD_ERROR_IO_ERROR);
             return;
 //            e.printStackTrace();
-        }finally {
-            if(bis!=null) try {
+        } finally {
+            if (bis != null) try {
                 bis.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            if(inputStream!=null) try {
+            if (inputStream != null) try {
                 inputStream.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            if(file!=null) try {
+            if (file != null) try {
                 file.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -138,7 +136,7 @@ public class DownloadTask implements Runnable {
 
 
     public float getPercent() {
-        return completedSize*100 /toolSize;
+        return completedSize * 100 / toolSize;
     }
 
 
@@ -146,10 +144,9 @@ public class DownloadTask implements Runnable {
         return toolSize;
     }
 
-    public void setToolSize(long toolSize) {
+    public void setTotalSize(long toolSize) {
         this.toolSize = toolSize;
     }
-
 
 
     public long getCompletedSize() {
@@ -191,9 +188,11 @@ public class DownloadTask implements Runnable {
     public void setUrl(String url) {
         this.url = url;
     }
+
     public void setHttpClient(OkHttpClient client) {
         this.client = client;
     }
+
     public String getFileName() {
         return fileName;
     }
@@ -203,43 +202,48 @@ public class DownloadTask implements Runnable {
     }
 
 
-    public void cancel(){
+    public void cancel() {
         downloadStatus = DownloadStatus.DOWNLOAD_STATUS_CANCEL;
     }
 
-    private void onPrepare(){
-        for(DownloadTaskListener listener:listeners){
+    private void onPrepare() {
+        for (DownloadTaskListener listener : listeners) {
             listener.onPrepare(this);
         }
     }
-    private void onStart(){
-        for(DownloadTaskListener listener:listeners){
+
+    private void onStart() {
+        for (DownloadTaskListener listener : listeners) {
             listener.onStart(this);
         }
     }
-    private void onDownloading(){
-        for(DownloadTaskListener listener:listeners){
+
+    private void onDownloading() {
+        for (DownloadTaskListener listener : listeners) {
             listener.onDownloading(this);
         }
     }
-    private void onCompleted(){
-        for(DownloadTaskListener listener:listeners){
+
+    private void onCompleted() {
+        for (DownloadTaskListener listener : listeners) {
             listener.onCompleted(this);
         }
     }
-    private void onError(int errorCode){
-        for(DownloadTaskListener listener:listeners){
+
+    private void onError(int errorCode) {
+        for (DownloadTaskListener listener : listeners) {
             listener.onError(this, errorCode);
         }
     }
 
-    public void addDownloadListener(DownloadTaskListener listener){
+    public void addDownloadListener(DownloadTaskListener listener) {
         listeners.add(listener);
     }
 
-    public void removeDownloadListener(DownloadTaskListener listener){
+    public void removeDownloadListener(DownloadTaskListener listener) {
         listeners.remove(listener);
     }
+
     public void setDownloadManager(DownloadManager downloadManager) {
         this.downloadManager = downloadManager;
     }
@@ -247,19 +251,19 @@ public class DownloadTask implements Runnable {
 
     @Override
     public boolean equals(Object o) {
-        if(this==o){
+        if (this == o) {
             return true;
         }
-        if(!(o instanceof DownloadTask)){
+        if (!(o instanceof DownloadTask)) {
             return false;
         }
-        if(TextUtils.isEmpty(url)||TextUtils.isEmpty(saveDirPath)){
+        if (TextUtils.isEmpty(url) || TextUtils.isEmpty(saveDirPath)) {
             return false;
         }
         return url.equals(((DownloadTask) o).url) && saveDirPath.equals(((DownloadTask) o).saveDirPath);
     }
 
-    public static DownloadTask parse(DownloadDBEntity entity){
+    public static DownloadTask parse(DownloadDBEntity entity) {
         DownloadTask task = new DownloadTask();
         task.setDownloadStatus(entity.getDownloadStatus());
         task.setId(entity.getDownloadId());
@@ -268,7 +272,7 @@ public class DownloadTask implements Runnable {
         task.setSaveDirPath(entity.getSaveDirPath());
         task.setCompletedSize(entity.getCompletedSize());
         task.setDbEntity(entity);
-        task.setToolSize(entity.getToolSize());
+        task.setTotalSize(entity.getToolSize());
         return task;
     }
 }
