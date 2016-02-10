@@ -3,7 +3,7 @@ package git.dzc.downloadmanagerlib.download;
 import android.content.Context;
 import android.util.Log;
 
-import com.squareup.okhttp.OkHttpClient;
+import okhttp3.OkHttpClient;
 
 import java.util.ArrayList;
 import java.util.HashMap;
