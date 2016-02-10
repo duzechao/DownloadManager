@@ -1,7 +1,5 @@
 package github.dzc.greendao;
 
-import java.io.IOException;
-
 import de.greenrobot.daogenerator.DaoGenerator;
 import de.greenrobot.daogenerator.Entity;
 import de.greenrobot.daogenerator.Schema;
