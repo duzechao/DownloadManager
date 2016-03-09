@@ -48,6 +48,12 @@ public class Main2Activity extends AppCompatActivity {
             }
 
             @Override
+            public void onCancel(DownloadTask downloadTask) {
+                Log.d(TAG,"onCancel");
+
+            }
+
+            @Override
             public void onCompleted(DownloadTask downloadTask) {
                 Log.d(TAG,"onCompleted");
 
@@ -61,4 +67,6 @@ public class Main2Activity extends AppCompatActivity {
         });
         textView.setText("taskId:"+taskId+"   savePath:"+downloadTask.getSaveDirPath()+"    name:"+downloadTask.getFileName());
     }
+
+
 }

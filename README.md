@@ -17,6 +17,16 @@ task.setUrl(url);<br/>
 downloadManager.addDownloadTask(task);<br/>
 
 
+新增方法：<br/>
+getCurrentTaskById：获取当前已经在下载队列里的任务<br/>
+getDBTaskById：获取数据库中存在的下载任务<br/>
+getTaskById：获取当前队列和数据库中的任务<br/>
+cancel：取消一个下载任务，此方法会删除数据库中保存的数据和下载的文件<br/>
+pause：暂停一个下载任务<br/>
+resume：恢复一个下载任务<br/>
+
+
+
 添加监听<br/>
 downloadManager.addDownloadListener(task,listener);
 
@@ -47,6 +57,14 @@ task.setFileName(id+".jpg");
 task.setUrl(url);
 downloadManager.addDownloadTask(task);
 
+
+new function add at 2016-03-10：<br/>
+getCurrentTaskById：get the task from the running task list<br/>
+getDBTaskById：get the task from database<br/>
+getTaskById：getCurrentTaskById()＋getDBTaskById()<br/>
+cancel：cancel a task,will delete the file and the info in the database<br/>
+pause：pause a task<br/>
+resume：resume a task<br/>
 
 
 //  Add a listener

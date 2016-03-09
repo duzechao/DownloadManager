@@ -7,7 +7,9 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -17,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 
 import git.dzc.downloadmanagerlib.download.DownloadManager;
+import git.dzc.downloadmanagerlib.download.DownloadStatus;
 import git.dzc.downloadmanagerlib.download.DownloadTask;
 import git.dzc.downloadmanagerlib.download.DownloadTaskListener;
 
@@ -26,6 +29,11 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv2;
     private TextView tv3;
     private TextView tv4;
+    private TextView tv5;
+
+    private Button btControl;
+    private Button btCancel;
+    private String taskId4;
 
     private List<String> taskIds = new ArrayList<>();
 
@@ -61,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
         tv2.setOnClickListener(listener);
         tv3.setOnClickListener(listener);
 
-        tv4 = (TextView) findViewById(R.id.tv4);
-        tv4.setOnClickListener(new View.OnClickListener() {
+        tv5 = (TextView) findViewById(R.id.tv5);
+        tv5.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (!taskIds.isEmpty()) {
@@ -71,6 +79,32 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(intent);
                 } else {
                     Toast.makeText(MainActivity.this, "请先开始一个下载", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        tv4 = (TextView) findViewById(R.id.tv4);
+        tv4.setOnClickListener(listener);
+        btControl = (Button) findViewById(R.id.bt_control);
+        btCancel = (Button) findViewById(R.id.bt_cancel);
+        btCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                tv4.setEnabled(true);
+                tv4.setText("download4");
+                btCancel.setVisibility(View.INVISIBLE);
+                btControl.setVisibility(View.INVISIBLE);
+                downloadManager.cancel(taskId4);
+            }
+        });
+        btControl.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                DownloadTask downloadTask = downloadManager.getCurrentTaskById(taskId4);
+                if(downloadTask.getDownloadStatus()== DownloadStatus.DOWNLOAD_STATUS_PAUSE){
+                    downloadManager.resume(taskId4);
+                }else{
+                    downloadManager.pause(taskId4);
                 }
             }
         });
@@ -120,8 +154,8 @@ public class MainActivity extends AppCompatActivity {
                 url = "http://g-ecx.images-amazon.com/images/S/amazon-dp.dpreview.com/sample_galleries/sony_a7r/2814738.jpg";
                 break;
             case R.id.tv3:
-                url = "http://cn1.rgwha.elcld.com/mp4_240/A7A93BC1-9CF4-A9E0-C856-9932A636A8D0_video.mp4?" +
-                        "AWSAccessKeyId=I0J6G456M87IARXGNTCP&Expires=1455323238&Signature=RRheBNYjpELavxGuCVYWCc1x%2BEI%3D";
+            case R.id.tv4:
+                url = "http://ac-nf6zosq5.clouddn.com/2c0298999ade5d6e.epub";
                 break;
         }
         return url;
@@ -140,11 +174,13 @@ public class MainActivity extends AppCompatActivity {
     private void download(String url, final TextView tv) {
         tv.setClickable(false);
         DownloadTask task = new DownloadTask();
-
+        if(tv.getId()==R.id.tv4){
+            taskId4 = counter+"";
+        }
         taskIds.add(counter + "");
         task.setId(counter + ""); counter ++;
         task.setSaveDirPath(getExternalCacheDir().getPath() + "/");
-        task.setFileName("movie" + counter +".mp4");
+        task.setFileName("book" + counter +".epub");
 
         task.setUrl(url);
         downloadManager.addDownloadTask(task, new DownloadTaskListener() {
@@ -153,10 +189,14 @@ public class MainActivity extends AppCompatActivity {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
+
+                        btControl.setVisibility(View.VISIBLE);
+                        btCancel.setVisibility(View.VISIBLE);
                         tv.setText("preparing ");
 
                     }
                 });
+                Log.d("","onPrepare");
             }
 
             @Override
@@ -169,6 +209,8 @@ public class MainActivity extends AppCompatActivity {
                                 "Will start to download counter " + counter, Integer.parseInt(downloadTask.getId()));
                     }
                 });
+                Log.d("","onStart");
+
             }
 
             @Override
@@ -183,16 +225,42 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
+                Log.d("","onDownloading");
             }
 
             @Override
             public void onPause(DownloadTask downloadTask) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        btControl.setText("resume");
+                        Toast.makeText(getApplicationContext(),"onPause",Toast.LENGTH_LONG).show();
+                    }
+                });
+                Log.d("","onPause");
+
+            }
+
+            @Override
+            public void onCancel(DownloadTask downloadTask) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        btControl.setVisibility(View.INVISIBLE);
+                        btCancel.setVisibility(View.INVISIBLE);
+                        tv4.setText("download4");
+                        tv4.setEnabled(true);
+                        Toast.makeText(getApplicationContext(),"onCancel",Toast.LENGTH_LONG).show();
+                    }
+                });
+                Log.d("","onCancel");
 
             }
 
             @Override
             public void onCompleted(DownloadTask downloadTask) {
                 finishedDownload(Integer.parseInt(downloadTask.getId()));
+                Log.d("","onCompleted");
 
             }
 
@@ -205,6 +273,8 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
+                Log.d("","onError");
+
             }
         });
 

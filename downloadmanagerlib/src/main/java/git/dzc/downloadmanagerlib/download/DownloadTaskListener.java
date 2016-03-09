@@ -8,6 +8,7 @@ public interface DownloadTaskListener {
     void onStart(DownloadTask downloadTask);
     void onDownloading(DownloadTask downloadTask);
     void onPause(DownloadTask downloadTask);
+    void onCancel(DownloadTask downloadTask);
     void onCompleted(DownloadTask downloadTask);
     void onError(DownloadTask downloadTask,int errorCode);
 

@@ -3,6 +3,7 @@ package git.dzc.downloadmanagerlib.download;
 import android.text.TextUtils;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +33,7 @@ public class DownloadTask implements Runnable {
     private String url;
     private String saveDirPath;
     private RandomAccessFile file;
-    private int UPDATE_SIZE = 40 * 1024;    //  The database is updated once every 40k
+    private int UPDATE_SIZE = 40 * 1024;    // The database is updated once every 40k
     private int downloadStatus = DownloadStatus.DOWNLOAD_STATUS_INIT;
 
     private String fileName;    // File name when saving
@@ -53,9 +54,13 @@ public class DownloadTask implements Runnable {
         try {
             dbEntity = downloadDao.load(id);
             file = new RandomAccessFile(saveDirPath + fileName, "rwd");
-            if (file.length() < completedSize) {
-                completedSize = 0;
+            if(dbEntity!=null){
+                completedSize = dbEntity.getCompletedSize();
             }
+//            if (file.length() < completedSize) {
+//                completedSize = 0;
+//            }
+
             downloadStatus = DownloadStatus.DOWNLOAD_STATUS_START;
             onStart();
             Request request = new Request.Builder()
@@ -66,7 +71,7 @@ public class DownloadTask implements Runnable {
             ResponseBody responseBody = response.body();
             if (responseBody != null) {
                 downloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING;
-                toolSize = responseBody.contentLength();
+                if(toolSize<=0)toolSize = responseBody.contentLength();
                 inputStream = responseBody.byteStream();
                 bis = new BufferedInputStream(inputStream);
                 byte[] buffer = new byte[2 * 1024];
@@ -76,7 +81,7 @@ public class DownloadTask implements Runnable {
                     dbEntity = new DownloadDBEntity(id, toolSize, 0L, url, saveDirPath, fileName, downloadStatus);
                     downloadDao.insertOrReplace(dbEntity);
                 }
-                while ((length = bis.read(buffer)) > 0 && downloadStatus != DownloadStatus.DOWNLOAD_STATUS_CANCEL) {
+                while ((length = bis.read(buffer)) > 0 && downloadStatus != DownloadStatus.DOWNLOAD_STATUS_CANCEL &&downloadStatus!=DownloadStatus.DOWNLOAD_STATUS_PAUSE) {
                     file.write(buffer, 0, length);
                     completedSize += length;
                     buffOffset += length;
@@ -119,11 +124,25 @@ public class DownloadTask implements Runnable {
                 e.printStackTrace();
             }
         }
-        downloadStatus = DownloadStatus.DOWNLOAD_STATUS_COMPLETED;
+
         dbEntity.setDownloadStatus(downloadStatus);
         downloadDao.update(dbEntity);
 
-        onCompleted();
+
+        switch (downloadStatus){
+            case DownloadStatus.DOWNLOAD_STATUS_COMPLETED:
+                onCompleted();
+                break;
+            case DownloadStatus.DOWNLOAD_STATUS_PAUSE:
+                onPause();
+                break;
+            case DownloadStatus.DOWNLOAD_STATUS_CANCEL:
+                downloadDao.delete(dbEntity);
+                File temp = new File(saveDirPath + fileName);
+                temp.delete();
+                onCancel();
+                break;
+        }
     }
 
     public String getId() {
@@ -206,6 +225,9 @@ public class DownloadTask implements Runnable {
         downloadStatus = DownloadStatus.DOWNLOAD_STATUS_CANCEL;
     }
 
+    public void pause(){
+        downloadStatus = DownloadStatus.DOWNLOAD_STATUS_PAUSE;
+    }
     private void onPrepare() {
         for (DownloadTaskListener listener : listeners) {
             listener.onPrepare(this);
@@ -230,6 +252,18 @@ public class DownloadTask implements Runnable {
         }
     }
 
+    private void onPause() {
+        for (DownloadTaskListener listener : listeners) {
+            listener.onPause(this);
+        }
+    }
+
+    private void onCancel() {
+        for (DownloadTaskListener listener : listeners) {
+            listener.onCancel(this);
+        }
+    }
+
     private void onError(int errorCode) {
         for (DownloadTaskListener listener : listeners) {
             listener.onError(this, errorCode);
@@ -240,8 +274,16 @@ public class DownloadTask implements Runnable {
         listeners.add(listener);
     }
 
+    /**
+     * if listener is null,clear all listener
+     * @param listener
+     */
     public void removeDownloadListener(DownloadTaskListener listener) {
-        listeners.remove(listener);
+        if(listener==null){
+            listeners.clear();
+        }else{
+            listeners.remove(listener);
+        }
     }
 
     public void setDownloadManager(DownloadManager downloadManager) {

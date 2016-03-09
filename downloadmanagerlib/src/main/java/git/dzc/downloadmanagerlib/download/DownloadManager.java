@@ -58,7 +58,7 @@ public class DownloadManager {
         return downloadManager;
     }
 
-    public void addDownloadTask(DownloadTask task,DownloadTaskListener listenr){
+    public void addDownloadTask(DownloadTask task,DownloadTaskListener listener){
         if(null!=currentTaskList.get(task.getId())&&task.getDownloadStatus()!=DownloadStatus.DOWNLOAD_STATUS_INIT){
             Log.d(TAG,"task already exist");
             return ;
@@ -67,10 +67,35 @@ public class DownloadManager {
         task.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_PREPARE);
         task.setDownloadDao(downloadDao);
         task.setHttpClient(client);
-        task.addDownloadListener(listenr);
+        task.addDownloadListener(listener);
         Future future =  executorService.submit(task);
         futureMap.put(task.getId(),future);
     }
+
+    /**
+     * if return null,the task does not exist
+     * @param taskId
+     * @return
+     */
+    public DownloadTask resume(String taskId){
+        DownloadTask downloadTask = getCurrentTaskById(taskId);
+        if(downloadTask!=null){
+            if(downloadTask.getDownloadStatus()==DownloadStatus.DOWNLOAD_STATUS_PAUSE){
+                Future future =  executorService.submit(downloadTask);
+                futureMap.put(downloadTask.getId(),future);
+            }
+
+        }else{
+            downloadTask = getDBTaskById(taskId);
+            if(downloadTask!=null){
+                currentTaskList.put(taskId,downloadTask);
+                Future future =  executorService.submit(downloadTask);
+                futureMap.put(downloadTask.getId(),future);
+            }
+        }
+        return downloadTask;
+    }
+
 
     public void addDownloadListener(DownloadTask task,DownloadTaskListener listener){
         task.addDownloadListener(listener);
@@ -85,8 +110,28 @@ public class DownloadManager {
     }
 
     public void cancel(DownloadTask task){
+        currentTaskList.remove(task.getId());
+        futureMap.remove(task.getId());
         task.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_CANCEL);
+        downloadDao.deleteByKey(task.getId());
     }
+    public void cancel(String taskId){
+        DownloadTask task = getTaskById(taskId);
+        if(task!=null){
+            cancel(task);
+        }
+    }
+    public void pause(DownloadTask task){
+        task.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_PAUSE);
+    }
+    public void pause(String taskId){
+        DownloadTask task = getTaskById(taskId);
+        if(task!=null){
+            pause(task);
+        }
+    }
+
+
 
     public List<DownloadDBEntity> loadAllDownloadEntityFromDB(){
         return downloadDao.loadAll();
@@ -104,8 +149,23 @@ public class DownloadManager {
         return downloadTaskList;
     }
 
-    public DownloadTask getTaskById(String taskId){
+    public DownloadTask getCurrentTaskById(String taskId){
         return currentTaskList.get(taskId);
+    }
+    public DownloadTask getTaskById(String taskId){
+        DownloadTask task = null;
+        task = getCurrentTaskById(taskId);
+        if(task!=null){
+            return task;
+        }
+        return getDBTaskById(taskId);
+    }
+    public DownloadTask getDBTaskById(String taskId){
+        DownloadDBEntity entity = downloadDao.load(taskId);
+        if(entity!=null){
+            return DownloadTask.parse(entity);
+        }
+        return null;
     }
 
 }

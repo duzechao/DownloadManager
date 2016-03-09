@@ -11,4 +11,5 @@ public class DownloadStatus {
     public static final int DOWNLOAD_STATUS_CANCEL = 3;
     public static final int DOWNLOAD_STATUS_ERROR = 4;
     public static final int DOWNLOAD_STATUS_COMPLETED = 5;
+    public static final int DOWNLOAD_STATUS_PAUSE = 6;
 }
