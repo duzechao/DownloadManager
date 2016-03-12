@@ -110,6 +110,7 @@ public class DownloadManager {
     }
 
     public void cancel(DownloadTask task){
+        task.cancel();
         currentTaskList.remove(task.getId());
         futureMap.remove(task.getId());
         task.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_CANCEL);
