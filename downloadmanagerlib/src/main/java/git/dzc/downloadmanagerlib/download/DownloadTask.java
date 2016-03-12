@@ -34,7 +34,7 @@ public class DownloadTask implements Runnable {
     private String url;
     private String saveDirPath;
     private RandomAccessFile file;
-    private int UPDATE_SIZE = 400 * 1024;    // The database is updated once every 40k
+    private int UPDATE_SIZE = 50 * 1024;    // The database is updated once every 50k
     private int downloadStatus = DownloadStatus.DOWNLOAD_STATUS_INIT;
 
     private String fileName;    // File name when saving
