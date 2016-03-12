@@ -5,7 +5,11 @@
 省去只能设置一个监听要添加一个广播来解决多个页面同时监听同一个下载线程的烦恼，<br/>
 具备了基本功能，暂时想不出需要添加什么功能，请有需求的提出来，我加上去，<br/>
 dzc_ze@foxmail.com 需求请通过邮箱发给我<br/>
-
+#update log:<br/>
+# 2016-03-12:
+bug修复，功能完善，<br/>当下载的文件已经存在但数据库没有记录的时候，<br/>会更新数据库记录而不会重复下载<br/>当文件不需要下载的时候，只会调用onPrepare和onComplete方法
+<br/>
+<br/>
 使用方法：<br/>
 downloadManager = DownloadManager.getInstance(this);<br/>
 DownloadTask task = new DownloadTask();<br/>
@@ -44,6 +48,11 @@ Eliminating the need to add only a listener to a broadcast address multiple page
 With the basic functions, temporarily can not think of what you need to add functionality, there is a demand put forward, I add the phrase, <br/>
 dzc_ze@foxmail.com needs please send me by mail <br/>
 
+#update log:<br/>
+# 2016-03-12:
+bug fixed，<br/>now,when the file already on the disk,only update the database and execute onPrepare() and onComplete()
+<br/>
+<br/>
 
 ##How to use：<br/>
 

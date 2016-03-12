@@ -173,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
     int counter = 1001;
 
     private void download(String url, final TextView tv) {
-        tv.setClickable(false);
+        tv.setEnabled(false);
         DownloadTask task = new DownloadTask();
         if(tv.getId()==R.id.tv4){
             taskId4 = counter+"";
@@ -251,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
                         btControl.setVisibility(View.INVISIBLE);
                         btCancel.setVisibility(View.INVISIBLE);
                         tv4.setText("download4");
-                        tv4.setClickable(true);
+                        tv4.setEnabled(true);
                         Toast.makeText(getApplicationContext(),"onCancel",Toast.LENGTH_LONG).show();
                     }
                 });

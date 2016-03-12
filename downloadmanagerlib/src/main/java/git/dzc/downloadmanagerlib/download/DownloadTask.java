@@ -1,6 +1,7 @@
 package git.dzc.downloadmanagerlib.download;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -61,8 +62,12 @@ public class DownloadTask implements Runnable {
             if (file.length() < completedSize) {
                 completedSize = file.length();
             }
-            if(toolSize<=file.length()){
+            long fileLength = file.length();
+            if(fileLength!=0&&toolSize<=fileLength){
                 downloadStatus = DownloadStatus.DOWNLOAD_STATUS_COMPLETED;
+                toolSize = completedSize = fileLength;
+                dbEntity = new DownloadDBEntity(id, toolSize, toolSize, url, saveDirPath, fileName, downloadStatus);
+                downloadDao.insertOrReplace(dbEntity);
                 onCompleted();
                 return;
             }
@@ -113,7 +118,6 @@ public class DownloadTask implements Runnable {
             downloadStatus = DownloadStatus.DOWNLOAD_STATUS_ERROR;
             onError(DownloadTaskListener.DOWNLOAD_ERROR_IO_ERROR);
             return;
-//            e.printStackTrace();
         } finally {
             if (bis != null) try {
                 bis.close();
@@ -131,7 +135,7 @@ public class DownloadTask implements Runnable {
                 e.printStackTrace();
             }
         }
-
+        if(toolSize==completedSize)downloadStatus=DownloadStatus.DOWNLOAD_STATUS_COMPLETED;
         dbEntity.setDownloadStatus(downloadStatus);
         downloadDao.update(dbEntity);
 
