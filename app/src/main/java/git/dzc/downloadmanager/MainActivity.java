@@ -25,6 +25,7 @@ import git.dzc.downloadmanagerlib.download.DownloadTaskListener;
 
 public class MainActivity extends AppCompatActivity {
 
+    static final String TAG = "DownloadManager";
     private TextView tv1;
     private TextView tv2;
     private TextView tv3;
@@ -180,12 +181,12 @@ public class MainActivity extends AppCompatActivity {
         taskIds.add(counter + "");
         task.setId(counter + ""); counter ++;
         task.setSaveDirPath(getExternalCacheDir().getPath() + "/");
-        task.setFileName("book" + counter +".epub");
+        task.setFileName(counter +url.substring(url.lastIndexOf('.')-1));
 
         task.setUrl(url);
         downloadManager.addDownloadTask(task, new DownloadTaskListener() {
             @Override
-            public void onPrepare(DownloadTask downloadTask) {
+            public void onPrepare(final DownloadTask downloadTask) {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -194,9 +195,12 @@ public class MainActivity extends AppCompatActivity {
                         btCancel.setVisibility(View.VISIBLE);
                         tv.setText("preparing ");
 
+                        setNotification(downloadTask.getFileName(),
+                                "Will start to download counter " + counter, Integer.parseInt(downloadTask.getId()));
+
                     }
                 });
-                Log.d("","onPrepare");
+                Log.d(TAG,"onPrepare");
             }
 
             @Override
@@ -205,11 +209,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         tv.setText("start");
-                        setNotification(downloadTask.getFileName(),
-                                "Will start to download counter " + counter, Integer.parseInt(downloadTask.getId()));
                     }
                 });
-                Log.d("","onStart");
+                Log.d(TAG,"onStart");
 
             }
 
@@ -225,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-                Log.d("","onDownloading");
+                Log.d(TAG,"onDownloading");
             }
 
             @Override
@@ -237,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(getApplicationContext(),"onPause",Toast.LENGTH_LONG).show();
                     }
                 });
-                Log.d("","onPause");
+                Log.d(TAG,"onPause");
 
             }
 
@@ -249,18 +251,25 @@ public class MainActivity extends AppCompatActivity {
                         btControl.setVisibility(View.INVISIBLE);
                         btCancel.setVisibility(View.INVISIBLE);
                         tv4.setText("download4");
-                        tv4.setEnabled(true);
+                        tv4.setClickable(true);
                         Toast.makeText(getApplicationContext(),"onCancel",Toast.LENGTH_LONG).show();
                     }
                 });
-                Log.d("","onCancel");
+                Log.d(TAG,"onCancel");
 
             }
 
             @Override
-            public void onCompleted(DownloadTask downloadTask) {
-                finishedDownload(Integer.parseInt(downloadTask.getId()));
-                Log.d("","onCompleted");
+            public void onCompleted(final DownloadTask downloadTask) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        tv.setText("finished");
+                        finishedDownload(Integer.parseInt(downloadTask.getId()));
+
+                    }
+                });
+                Log.d(TAG,"onCompleted");
 
             }
 
@@ -273,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-                Log.d("","onError");
+                Log.d(TAG,"onError");
 
             }
         });

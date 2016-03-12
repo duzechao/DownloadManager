@@ -56,22 +56,29 @@ public class DownloadTask implements Runnable {
             file = new RandomAccessFile(saveDirPath + fileName, "rwd");
             if(dbEntity!=null){
                 completedSize = dbEntity.getCompletedSize();
+                toolSize = dbEntity.getToolSize();
             }
-//            if (file.length() < completedSize) {
-//                completedSize = 0;
-//            }
-
+            if (file.length() < completedSize) {
+                completedSize = file.length();
+            }
+            if(toolSize<=file.length()){
+                downloadStatus = DownloadStatus.DOWNLOAD_STATUS_COMPLETED;
+                onCompleted();
+                return;
+            }
             downloadStatus = DownloadStatus.DOWNLOAD_STATUS_START;
             onStart();
             Request request = new Request.Builder()
                     .url(url)
                     .header("RANGE", "bytes=" + completedSize + "-")    //  Http value set breakpoints RANGE
                     .build();
+            file.seek(completedSize);
             Response response = client.newCall(request).execute();
             ResponseBody responseBody = response.body();
             if (responseBody != null) {
                 downloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING;
                 if(toolSize<=0)toolSize = responseBody.contentLength();
+
                 inputStream = responseBody.byteStream();
                 bis = new BufferedInputStream(inputStream);
                 byte[] buffer = new byte[2 * 1024];
@@ -139,7 +146,7 @@ public class DownloadTask implements Runnable {
             case DownloadStatus.DOWNLOAD_STATUS_CANCEL:
                 downloadDao.delete(dbEntity);
                 File temp = new File(saveDirPath + fileName);
-                temp.delete();
+                if(temp.exists())temp.delete();
                 onCancel();
                 break;
         }
@@ -222,11 +229,13 @@ public class DownloadTask implements Runnable {
 
 
     public void cancel() {
-        downloadStatus = DownloadStatus.DOWNLOAD_STATUS_CANCEL;
+        setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_CANCEL);
+        File temp = new File(saveDirPath + fileName);
+        if(temp.exists())temp.delete();
     }
 
     public void pause(){
-        downloadStatus = DownloadStatus.DOWNLOAD_STATUS_PAUSE;
+        setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_PAUSE);
     }
     private void onPrepare() {
         for (DownloadTaskListener listener : listeners) {
