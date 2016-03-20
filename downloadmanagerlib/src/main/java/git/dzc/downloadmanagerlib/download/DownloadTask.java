@@ -100,13 +100,14 @@ public class DownloadTask implements Runnable {
                     if (buffOffset >= UPDATE_SIZE) {
                         // Update download information database
                         buffOffset = 0;
-                        dbEntity.setCompletedSize(completedSize);
-                        downloadDao.update(dbEntity);
+//                        dbEntity.setCompletedSize(completedSize);
+//                        downloadDao.update(dbEntity);
                         onDownloading();
                     }
                 }
-                dbEntity.setCompletedSize(completedSize);
-                downloadDao.update(dbEntity);
+                //这两句根据需要自行选择是否注释，注释掉的话由于少了数据库的读取，速度会快一点，但同时如果在下载过程程序崩溃的话，程序不会保存最新的下载进度
+//                dbEntity.setCompletedSize(completedSize);
+//                downloadDao.update(dbEntity);
                 onDownloading();
             }
         } catch (FileNotFoundException e) {
@@ -119,6 +120,8 @@ public class DownloadTask implements Runnable {
             onError(DownloadTaskListener.DOWNLOAD_ERROR_IO_ERROR);
             return;
         } finally {
+            dbEntity.setCompletedSize(completedSize);
+            downloadDao.update(dbEntity);
             if (bis != null) try {
                 bis.close();
             } catch (IOException e) {
