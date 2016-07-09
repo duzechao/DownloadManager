@@ -21,6 +21,19 @@ public class DownloadDBEntity {
         this.downloadId = downloadId;
     }
 
+    @Override
+    public String toString() {
+        return "DownloadDBEntity{" +
+                "completedSize=" + completedSize +
+                ", downloadId='" + downloadId + '\'' +
+                ", toolSize=" + toolSize +
+                ", url='" + url + '\'' +
+                ", saveDirPath='" + saveDirPath + '\'' +
+                ", fileName='" + fileName + '\'' +
+                ", downloadStatus=" + downloadStatus +
+                '}';
+    }
+
     public DownloadDBEntity(String downloadId, Long toolSize, Long completedSize, String url, String saveDirPath, String fileName, Integer downloadStatus) {
         this.downloadId = downloadId;
         this.toolSize = toolSize;

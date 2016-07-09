@@ -13,10 +13,12 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 import git.dzc.downloadmanagerlib.download.DownloadManager;
 import git.dzc.downloadmanagerlib.download.DownloadStatus;
@@ -51,7 +53,6 @@ public class MainActivity extends AppCompatActivity {
         handler = new Handler();
         downloadManager = DownloadManager.getInstance(getApplicationContext());
 
-        downloadManager = DownloadManager.getInstance(getApplicationContext());
 
         mNotificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -74,13 +75,8 @@ public class MainActivity extends AppCompatActivity {
         tv5.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (!taskIds.isEmpty()) {
                     Intent intent = new Intent(MainActivity.this, Main2Activity.class);
-                    intent.putExtra("taskId", taskIds.get(0));
                     startActivity(intent);
-                } else {
-                    Toast.makeText(MainActivity.this, "请先开始一个下载", Toast.LENGTH_LONG).show();
-                }
             }
         });
 
@@ -152,11 +148,12 @@ public class MainActivity extends AppCompatActivity {
                 url = "http://cdn0.sbnation.com/assets/3400207/DSC00845.JPG";
                 break;
             case R.id.tv2:
-                url = "http://g-ecx.images-amazon.com/images/S/amazon-dp.dpreview.com/sample_galleries/sony_a7r/2814738.jpg";
+                url = "http://ac-nf6zosq5.clouddn.com/2c0298999ade5d6e.epub";
                 break;
             case R.id.tv3:
             case R.id.tv4:
-                url = "http://ac-nf6zosq5.clouddn.com/2c0298999ade5d6e.epub";
+//                url = "http://ac-nf6zosq5.clouddn.com/2c0298999ade5d6e.epub";
+                url = "https://codeload.github.com/duzechao/DownloadManager/zip/master";
                 break;
         }
         return url;
@@ -175,13 +172,12 @@ public class MainActivity extends AppCompatActivity {
     private void download(String url, final TextView tv) {
         tv.setEnabled(false);
         DownloadTask task = new DownloadTask();
-        if(tv.getId()==R.id.tv4){
-            taskId4 = counter+"";
-        }
-        taskIds.add(counter + "");
-        task.setId(counter + ""); counter ++;
+        String fileName = MD5.MD5(url);
+
+        task.setFileName(fileName);
+        taskIds.add(fileName);
+        task.setId(fileName);
         task.setSaveDirPath(getExternalCacheDir().getPath() + "/");
-        task.setFileName(counter +url.substring(url.lastIndexOf('.')-1));
 
         task.setUrl(url);
         downloadManager.addDownloadTask(task, new DownloadTaskListener() {
@@ -191,12 +187,14 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
 
-                        btControl.setVisibility(View.VISIBLE);
-                        btCancel.setVisibility(View.VISIBLE);
+                        if(tv.getId()==R.id.tv4){
+                            btControl.setVisibility(View.VISIBLE);
+                            btCancel.setVisibility(View.VISIBLE);
+                        }
                         tv.setText("preparing ");
 
                         setNotification(downloadTask.getFileName(),
-                                "Will start to download counter " + counter, Integer.parseInt(downloadTask.getId()));
+                                "Will start to download counter " + counter, downloadTask.getId().hashCode());
 
                     }
                 });
@@ -223,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
                         tv.setText((int) downloadTask.getPercent() + "%       ");
 
                         updateNotification(downloadTask.getFileName(),
-                                (int) downloadTask.getPercent(), downloadTask.getToolSize(), Integer.parseInt(downloadTask.getId()));
+                                (int) downloadTask.getPercent(), downloadTask.getToolSize(), downloadTask.getId().hashCode());
 
                     }
                 });
@@ -235,7 +233,9 @@ public class MainActivity extends AppCompatActivity {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        btControl.setText("resume");
+                        if(tv.getId()==R.id.tv4) {
+                            btControl.setText("resume");
+                        }
                         Toast.makeText(getApplicationContext(),"onPause",Toast.LENGTH_LONG).show();
                     }
                 });
@@ -248,10 +248,12 @@ public class MainActivity extends AppCompatActivity {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        btControl.setVisibility(View.INVISIBLE);
-                        btCancel.setVisibility(View.INVISIBLE);
-                        tv4.setText("download4");
-                        tv4.setEnabled(true);
+                        if(tv.getId()==R.id.tv4) {
+                            btControl.setVisibility(View.INVISIBLE);
+                            btCancel.setVisibility(View.INVISIBLE);
+                            tv4.setText("download4");
+                            tv4.setEnabled(true);
+                        }
                         Toast.makeText(getApplicationContext(),"onCancel",Toast.LENGTH_LONG).show();
                     }
                 });
@@ -265,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         tv.setText("finished");
-                        finishedDownload(Integer.parseInt(downloadTask.getId()));
+                        finishedDownload(downloadTask.getId().hashCode());
 
                     }
                 });

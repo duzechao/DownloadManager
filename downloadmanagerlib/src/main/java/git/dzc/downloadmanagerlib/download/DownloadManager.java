@@ -3,17 +3,28 @@ package git.dzc.downloadmanagerlib.download;
 import android.content.Context;
 import android.util.Log;
 
-import okhttp3.OkHttpClient;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
+
+import okhttp3.OkHttpClient;
 
 /**
  * Created by dzc on 15/11/21.
@@ -31,45 +42,137 @@ public class DownloadManager {
     public Map<String, DownloadTask> getCurrentTaskList() {
         return currentTaskList;
     }
-
     private Map<String,DownloadTask> currentTaskList = new HashMap<>();
-    public void init(){
+
+    private void init(InputStream in,OkHttpClient okHttpClient){
         executorService = Executors.newFixedThreadPool(mPoolSize);
         futureMap = new HashMap<>();
         DaoMaster.OpenHelper openHelper = new DaoMaster.DevOpenHelper(context,"downloadDB",null);
         DaoMaster daoMaster = new DaoMaster(openHelper.getWritableDatabase());
         downloadDao = daoMaster.newSession().getDownloadDao();
-        client = new OkHttpClient();
+        if(okHttpClient!=null){
+            client = okHttpClient;
+        }else{
+            OkHttpClient.Builder buider = new OkHttpClient.Builder();
+            if(in!=null){
+                buider.sslSocketFactory(initCertificates(in));
+            }
+            client = buider.build();
+        }
+
+    }
+    private void init(){
+        init(null,null);
+    }
+
+    public DownloadManager(OkHttpClient client, Context context) {
+        this.client = client;
+        this.context = context;
+    }
+
+    public static SSLSocketFactory initCertificates(InputStream... certificates) {
+        CertificateFactory certificateFactory;
+
+        SSLContext sslContext = null;
+        try {
+            certificateFactory = CertificateFactory.getInstance("X.509");
+            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            keyStore.load(null);
+            int index = 0;
+            for (InputStream certificate : certificates) {
+                String certificateAlias = Integer.toString(index++);
+                keyStore.setCertificateEntry(certificateAlias, certificateFactory.generateCertificate(certificate));
+
+                try {
+                    if (certificate != null)
+                        certificate.close();
+                } catch (IOException e) {
+                }
+            }
+
+            sslContext = SSLContext.getInstance("TLS");
+
+            TrustManagerFactory trustManagerFactory =
+                    TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+
+            trustManagerFactory.init(keyStore);
+            sslContext.init(null, trustManagerFactory.getTrustManagers(),new SecureRandom());
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (KeyManagementException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if(sslContext!=null){
+            return sslContext.getSocketFactory();
+        }
+        return null;
+
     }
 
     private DownloadManager() {
         init();
     }
 
-    private DownloadManager(Context context) {
+
+    private DownloadManager(Context context,InputStream in) {
         this.context = context;
-        init();
+        init(in,null);
     }
 
-    public static DownloadManager getInstance(Context context){
+    /**
+     *
+     * @param context
+     * @param sslKey https签名文件
+     * @return
+     */
+    public static DownloadManager getInstance(Context context,InputStream sslKey){
         if(downloadManager==null){
-            downloadManager = new DownloadManager(context);
+            downloadManager = new DownloadManager(context,sslKey);
+        }
+        return downloadManager;
+    }
+    public static DownloadManager getInstance(Context context){
+        return getInstance(context,null);
+    }
+
+    public static DownloadManager getInstance(OkHttpClient okHttpClient,Context context){
+        if(downloadManager==null){
+            downloadManager = new DownloadManager(okHttpClient,context);
         }
         return downloadManager;
     }
 
-    public void addDownloadTask(DownloadTask task,DownloadTaskListener listener){
-        if(null!=currentTaskList.get(task.getId())&&task.getDownloadStatus()!=DownloadStatus.DOWNLOAD_STATUS_INIT){
+    /**
+     * if task already exist,return the task,else return null
+     * @param task
+     * @param listener
+     * @return
+     */
+    public DownloadTask addDownloadTask(DownloadTask task,DownloadTaskListener listener){
+        DownloadTask downloadTask = currentTaskList.get(task.getId());
+        if(null!=downloadTask&&downloadTask.getDownloadStatus()!=DownloadStatus.DOWNLOAD_STATUS_CANCEL){
             Log.d(TAG,"task already exist");
-            return ;
+            return downloadTask;
         }
         currentTaskList.put(task.getId(), task);
         task.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_PREPARE);
         task.setDownloadDao(downloadDao);
         task.setHttpClient(client);
         task.addDownloadListener(listener);
+        if(getDBTaskById(task.getId())==null){
+            DownloadDBEntity dbEntity = new DownloadDBEntity(task.getId(), task.getToolSize(), task.getCompletedSize(), task.getUrl(), task.getSaveDirPath(), task.getFileName(), task.getDownloadStatus());
+            downloadDao.insertOrReplace(dbEntity);
+        }
         Future future =  executorService.submit(task);
         futureMap.put(task.getId(),future);
+        return null;
     }
 
     /**
@@ -105,8 +208,8 @@ public class DownloadManager {
         task.removeDownloadListener(listener);
     }
 
-    public void addDownloadTask(DownloadTask task){
-        addDownloadTask(task, null);
+    public DownloadTask addDownloadTask(DownloadTask task){
+        return addDownloadTask(task, null);
     }
 
     public void cancel(DownloadTask task){
@@ -138,6 +241,12 @@ public class DownloadManager {
         return downloadDao.loadAll();
     }
 
+    /**
+     * if not exists return null
+     * the task maybe not in the running task list,
+     * you can add{@link #addDownloadTask(DownloadTask) addDownloadTask}
+     * @return
+     */
     public List<DownloadTask> loadAllDownloadTaskFromDB(){
         List<DownloadDBEntity> list = loadAllDownloadEntityFromDB();
         List<DownloadTask> downloadTaskList = null;
@@ -150,9 +259,44 @@ public class DownloadManager {
         return downloadTaskList;
     }
 
+    /**
+     * return all task include running and db
+     * @return
+     */
+    public List<DownloadTask> loadAllTask(){
+        List<DownloadTask> list = loadAllDownloadTaskFromDB();
+        Map<String,DownloadTask> currentTaskMap = getCurrentTaskList();
+        List<DownloadTask> currentList = new ArrayList<>();
+        if(currentTaskMap!=null){
+            currentList.addAll(currentTaskMap.values());
+        }
+        if(!currentList.isEmpty()&&list!=null){
+            for(DownloadTask task:list){
+                if(!currentList.contains(task)){
+                    currentList.add(task);
+                }
+            }
+        }else{
+            if(list!=null)currentList.addAll(list);
+        }
+        return currentList;
+    }
+
+    /**
+     * return the task in the running task list
+     * @param taskId
+     * @return
+     */
     public DownloadTask getCurrentTaskById(String taskId){
         return currentTaskList.get(taskId);
     }
+    /**
+     * if not exists return null
+     * the task maybe not in the running task list,
+     * you can add{@link #addDownloadTask(DownloadTask) addDownloadTask}
+     * @param taskId
+     * @return
+     */
     public DownloadTask getTaskById(String taskId){
         DownloadTask task = null;
         task = getCurrentTaskById(taskId);
@@ -161,6 +305,14 @@ public class DownloadManager {
         }
         return getDBTaskById(taskId);
     }
+
+    /**
+     * if not exists return null
+     * the task maybe not in the running task list,
+     * you can add{@link #addDownloadTask(DownloadTask) addDownloadTask}
+     * @param taskId
+     * @return
+     */
     public DownloadTask getDBTaskById(String taskId){
         DownloadDBEntity entity = downloadDao.load(taskId);
         if(entity!=null){

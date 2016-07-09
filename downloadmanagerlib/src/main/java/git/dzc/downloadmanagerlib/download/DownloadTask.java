@@ -40,10 +40,10 @@ public class DownloadTask implements Runnable {
     private String fileName;    // File name when saving
 
 
-    private List<DownloadTaskListener> listeners;
+    private List<DownloadTaskListener> listeners = new ArrayList<>();;
 
     public DownloadTask() {
-        listeners = new ArrayList<>();
+
     }
 
     @Override
@@ -77,39 +77,61 @@ public class DownloadTask implements Runnable {
                     .url(url)
                     .header("RANGE", "bytes=" + completedSize + "-")    //  Http value set breakpoints RANGE
                     .build();
-            file.seek(completedSize);
             Response response = client.newCall(request).execute();
-            ResponseBody responseBody = response.body();
-            if (responseBody != null) {
-                downloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING;
-                if(toolSize<=0)toolSize = responseBody.contentLength();
-
-                inputStream = responseBody.byteStream();
-                bis = new BufferedInputStream(inputStream);
-                byte[] buffer = new byte[2 * 1024];
-                int length = 0;
-                int buffOffset = 0;
-                if (dbEntity == null) {
-                    dbEntity = new DownloadDBEntity(id, toolSize, 0L, url, saveDirPath, fileName, downloadStatus);
-                    downloadDao.insertOrReplace(dbEntity);
-                }
-                while ((length = bis.read(buffer)) > 0 && downloadStatus != DownloadStatus.DOWNLOAD_STATUS_CANCEL &&downloadStatus!=DownloadStatus.DOWNLOAD_STATUS_PAUSE) {
-                    file.write(buffer, 0, length);
-                    completedSize += length;
-                    buffOffset += length;
-                    if (buffOffset >= UPDATE_SIZE) {
-                        // Update download information database
-                        buffOffset = 0;
-//                        dbEntity.setCompletedSize(completedSize);
-//                        downloadDao.update(dbEntity);
-                        onDownloading();
+            if(response!=null&&response.isSuccessful()){
+                ResponseBody responseBody = response.body();
+                if (responseBody != null) {
+                    downloadStatus = DownloadStatus.DOWNLOAD_STATUS_DOWNLOADING;
+                    if(toolSize<=0){
+                        toolSize = responseBody.contentLength();
+                        dbEntity.setToolSize(toolSize);
+                        downloadDao.update(dbEntity);
                     }
+                    if(TextUtils.isEmpty(response.header("Content-Range"))){
+                        //返回的没有Content-Range 不支持断点下载 需要重新下载
+                        File alreadyDownloadedFile = new File(saveDirPath + fileName);
+                        if(alreadyDownloadedFile.exists()){
+                            alreadyDownloadedFile.delete();
+                        }
+                        file = new RandomAccessFile(saveDirPath + fileName, "rwd");
+                        completedSize = 0;
+                    }
+                    file.seek(completedSize);
+                    inputStream = responseBody.byteStream();
+                    bis = new BufferedInputStream(inputStream);
+                    byte[] buffer = new byte[2 * 1024];
+                    int length = 0;
+                    int buffOffset = 0;
+                    if (dbEntity == null) {
+                        dbEntity = new DownloadDBEntity(id, toolSize, 0L, url, saveDirPath, fileName, downloadStatus);
+                        downloadDao.insertOrReplace(dbEntity);
+                    }
+                    while ((length = bis.read(buffer)) > 0 && downloadStatus != DownloadStatus.DOWNLOAD_STATUS_CANCEL &&downloadStatus!=DownloadStatus.DOWNLOAD_STATUS_PAUSE) {
+                        file.write(buffer, 0, length);
+                        completedSize += length;
+                        buffOffset += length;
+                        if (buffOffset >= UPDATE_SIZE) {
+                            // Update download information database
+                            buffOffset = 0;
+                            //这两句根据需要自行选择是否注释，注释掉的话由于少了数据库的读取，速度会快一点，但同时如果在下载过程程序崩溃的话，程序不会保存最新的下载进度,并且下载过程不会更新进度
+                            dbEntity.setCompletedSize(completedSize);
+                            downloadDao.update(dbEntity);
+                            Log.d("onDownloading1",dbEntity.toString());
+
+                            onDownloading();
+                        }
+                    }
+                    dbEntity.setCompletedSize(completedSize);
+                    downloadDao.update(dbEntity);
+                    Log.d("onDownloading2",dbEntity.toString());
+
+                    onDownloading();
                 }
-                //这两句根据需要自行选择是否注释，注释掉的话由于少了数据库的读取，速度会快一点，但同时如果在下载过程程序崩溃的话，程序不会保存最新的下载进度
-//                dbEntity.setCompletedSize(completedSize);
-//                downloadDao.update(dbEntity);
-                onDownloading();
+            }else{
+                downloadStatus = DownloadStatus.DOWNLOAD_STATUS_ERROR;
+                onError(DownloadTaskListener.DOWNLOAD_ERROR_IO_ERROR);
             }
+
         } catch (FileNotFoundException e) {
             downloadStatus = DownloadStatus.DOWNLOAD_STATUS_ERROR;
             onError(DownloadTaskListener.DOWNLOAD_ERROR_FILE_NOT_FOUND);
@@ -122,6 +144,7 @@ public class DownloadTask implements Runnable {
         } finally {
             dbEntity.setCompletedSize(completedSize);
             downloadDao.update(dbEntity);
+            Log.d("onDownloadComplete",dbEntity.toString());
             if (bis != null) try {
                 bis.close();
             } catch (IOException e) {
@@ -141,6 +164,8 @@ public class DownloadTask implements Runnable {
         if(toolSize==completedSize)downloadStatus=DownloadStatus.DOWNLOAD_STATUS_COMPLETED;
         dbEntity.setDownloadStatus(downloadStatus);
         downloadDao.update(dbEntity);
+        Log.d("onDownloadComplete2",dbEntity.toString());
+
 
 
         switch (downloadStatus){
@@ -169,7 +194,7 @@ public class DownloadTask implements Runnable {
 
 
     public float getPercent() {
-        return completedSize * 100 / toolSize;
+        return toolSize==0?0:completedSize * 100 / toolSize;
     }
 
 
@@ -257,6 +282,7 @@ public class DownloadTask implements Runnable {
     }
 
     private void onDownloading() {
+        Log.d("onDownloading",id+"listener size:"+listeners.size());
         for (DownloadTaskListener listener : listeners) {
             listener.onDownloading(this);
         }
@@ -295,11 +321,13 @@ public class DownloadTask implements Runnable {
      * @param listener
      */
     public void removeDownloadListener(DownloadTaskListener listener) {
-        if(listener==null){
-            listeners.clear();
-        }else{
+        if(listener!=null){
             listeners.remove(listener);
         }
+    }
+
+    public void removeAllDownloadListener(){
+        this.listeners.clear();
     }
 
     public void setDownloadManager(DownloadManager downloadManager) {
@@ -309,16 +337,19 @@ public class DownloadTask implements Runnable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof DownloadTask)) {
-            return false;
-        }
-        if (TextUtils.isEmpty(url) || TextUtils.isEmpty(saveDirPath)) {
-            return false;
-        }
-        return url.equals(((DownloadTask) o).url) && saveDirPath.equals(((DownloadTask) o).saveDirPath);
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DownloadTask that = (DownloadTask) o;
+
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        return url != null ? url.equals(that.url) : that.url == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
     }
 
     public static DownloadTask parse(DownloadDBEntity entity) {
