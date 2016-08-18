@@ -48,6 +48,9 @@ public class DownloadTask implements Runnable {
 
     @Override
     public void run() {
+        if(downloadStatus==DownloadStatus.DOWNLOAD_STATUS_PAUSE){
+            return;
+        }
         downloadStatus = DownloadStatus.DOWNLOAD_STATUS_PREPARE;
         onPrepare();
         InputStream inputStream = null;

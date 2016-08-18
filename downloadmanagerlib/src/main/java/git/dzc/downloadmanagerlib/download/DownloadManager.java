@@ -184,6 +184,7 @@ public class DownloadManager {
         DownloadTask downloadTask = getCurrentTaskById(taskId);
         if(downloadTask!=null){
             if(downloadTask.getDownloadStatus()==DownloadStatus.DOWNLOAD_STATUS_PAUSE){
+                downloadTask.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_INIT);
                 Future future =  executorService.submit(downloadTask);
                 futureMap.put(downloadTask.getId(),future);
             }
@@ -191,6 +192,7 @@ public class DownloadManager {
         }else{
             downloadTask = getDBTaskById(taskId);
             if(downloadTask!=null){
+                downloadTask.setDownloadStatus(DownloadStatus.DOWNLOAD_STATUS_INIT);
                 currentTaskList.put(taskId,downloadTask);
                 Future future =  executorService.submit(downloadTask);
                 futureMap.put(downloadTask.getId(),future);
