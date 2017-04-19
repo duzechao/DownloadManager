@@ -1,5 +1,5 @@
 # DownloadManager
-#如果需要使用网络请求及上传文件 请看[OKHttpUtils](https://github.com/duzechao/OKHttpUtils)
+# 如果需要使用网络请求及上传文件 请看[OKHttpUtils](https://github.com/duzechao/OKHttpUtils)
 一个下载Android框架，网络连接用了okhttp，数据库方面用GreenDao，<br/>
 # 这个库只提供了较简单的下载功能，可根据需要扩展，由于使用了greendao，所以数据库方面扩展比较简易<br>
 性能相对用原生的有所提升且支持数据库的一对一、一对多等多表关联，<br/>支持断点下载、加载下载的任务并可给同一个任务设置多个监听，<br/>
@@ -57,13 +57,13 @@ Eliminating the need to add only a listener to a broadcast address multiple page
 With the basic functions, temporarily can not think of what you need to add functionality, there is a demand put forward, I add the phrase, <br/>
 dzc_ze@foxmail.com needs please send me by mail <br/>
 
-#update log:<br/>
+# update log:<br/>
 # 2016-03-12:
 bug fixed，<br/>now,when the file already on the disk,only update the database and execute onPrepare() and onComplete()
 <br/>
 <br/>
 
-##How to use：<br/>
+## How to use：<br/>
 
 ```
 downloadManager = DownloadManager.getInstance(this);
